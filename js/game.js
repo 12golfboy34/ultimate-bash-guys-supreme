@@ -1,26 +1,18 @@
 // Minimal prototype game logic using Three.js
-// Features implemented:
-// - Start GUI with the name "Sir Long-arms"
-// - Loads a GLB model if present at assets/models/work work smash fuh character noob.glb
-// - Falls back to simple boxes if no model is found
-// - Click to punch (player lunges forward briefly)
-// - Enemy walks toward player and, when in hit range, chooses a random action with the requested probabilities
-// - Stage boundaries prevent walking off stage
+// Updated: add pre-game character select (placeholder) and ensure selected character name appears in HUD and attack messages
 
-import * as THREE from 'three';
-
-// We can't use ES modules easily from the static page with CDN loader, so put everything on window
 (function(){
   const container = document.getElementById('container');
   const startBtn = document.getElementById('start-btn');
   const startScreen = document.getElementById('start-screen');
   const hud = document.getElementById('hud');
   const messageEl = document.getElementById('message');
+  const selectedNameEl = document.getElementById('selected-character-name');
 
   let scene, camera, renderer, clock;
   let player, enemy; // objects with position and simple methods
   let punchCooldown = 0;
-  let isPunched = false;
+  let selectedCharacterName = 'placeholder';
   const stage = {minX:-6, maxX:6};
 
   function showMessage(txt, ms=1500){
@@ -93,12 +85,10 @@ import * as THREE from 'three';
     loader.load(modelPath, (gltf)=>{
       const gl = gltf.scene;
       gl.traverse(c=>{ if(c.isMesh) c.castShadow = true; });
-      // Try to find a good root
       gl.scale.setScalar(1.0);
       gl.position.set(-2,0,0);
       scene.add(gl);
       player = gl;
-      // Name display is handled in HTML; store arm reference if available
       cb();
     }, undefined, (e)=>{
       console.warn('Model not found or failed to load, using simple boxes.', e);
@@ -109,11 +99,15 @@ import * as THREE from 'three';
   }
 
   function startGame(){
+    // read selected character from the radio inputs
+    const sel = document.querySelector('input[name="character"]:checked');
+    if(sel) selectedCharacterName = sel.value || 'placeholder';
+    selectedNameEl.textContent = selectedCharacterName;
+
     startScreen.classList.add('hidden');
     hud.classList.remove('hidden');
     initThree();
     loadModelOrFallback(()=>{
-      // ensure enemy exists (if model loaded, create enemy box)
       if(!enemy) enemy = createSimpleEnemy();
       if(!player) player = createSimplePlayer();
       animate();
@@ -138,7 +132,6 @@ import * as THREE from 'three';
 
   function animate(){
     const dt = Math.min(0.05, clock.getDelta());
-    // update enemy AI
     const pPos = player.position;
     const ePos = enemy.position;
     const dx = pPos.x - ePos.x;
@@ -147,29 +140,24 @@ import * as THREE from 'three';
     if(enemyState.stateTimer>0){
       enemyState.stateTimer -= dt;
       if(enemyState.action === 'walkBack'){
-        // move away from player for the duration
         const dir = ePos.x < pPos.x ? -1 : 1; // move opposite
         ePos.x += dir * 2 * dt; // speed 2
         ePos.x = enforceStageLimit(ePos.x);
       }
-      // if punching or special, we can animate small lunge
       if(enemyState.stateTimer<=0) enemyState.action = 'idle';
     } else {
       if(dist > 1.8){
-        // walk towards player
         const dir = dx>0 ? 1 : -1;
         ePos.x += dir * 1.2 * dt; // walk speed
         ePos.x = enforceStageLimit(ePos.x);
         enemyState.action = 'walk';
       } else {
-        // in hit range -> decide
         const act = pickEnemyActionInRange();
         enemyState.action = act;
         if(act === 'walkBack'){
           enemyState.stateTimer = 2.0;
         } else if(act === 'punch'){
           enemyState.stateTimer = 0.6;
-          // simple lunge towards player
           const sign = dx>0 ? 1 : -1;
           ePos.x += sign * 0.8;
           ePos.x = enforceStageLimit(ePos.x);
@@ -184,7 +172,6 @@ import * as THREE from 'three';
       }
     }
 
-    // handle punch cooldown
     if(punchCooldown>0) punchCooldown -= dt;
 
     renderer.render(scene, camera);
@@ -194,12 +181,10 @@ import * as THREE from 'three';
   function playerPunch(){
     if(punchCooldown>0) return;
     punchCooldown = 0.6;
-    showMessage('You punched!');
-    // Lunge forward a bit and check collision
+    showMessage(selectedCharacterName + ' punched!');
     const origX = player.position.x;
     const forward = 0.8;
     const sign = 1; // players face +x in our layout
-    // animate with simple tween
     const duration = 0.18;
     const start = performance.now();
     function step(){
@@ -214,18 +199,15 @@ import * as THREE from 'three';
     }
     step();
 
-    // collision check
     const dist = Math.abs(player.position.x - enemy.position.x);
     const hitRange = 1.6;
     if(dist < hitRange){
-      // If enemy currently blocking, reduced effect
       if(enemyState.action === 'block'){
         showMessage('Enemy blocked your punch!', 1200);
       } else if(enemyState.action === 'special'){
         showMessage('Enemy interrupted with special!', 1200);
       } else {
         showMessage('Hit!', 1000);
-        // enemy knockback
         const dir = enemy.position.x < player.position.x ? -1 : 1;
         enemy.position.x += dir * 0.6;
         enemy.position.x = enforceStageLimit(enemy.position.x);
@@ -237,7 +219,6 @@ import * as THREE from 'three';
 
   // input handlers
   window.addEventListener('click', (e)=>{
-    // if start screen visible, ignore clicks on document
     if(!startScreen.classList.contains('hidden')) return;
     playerPunch();
   });
@@ -246,6 +227,5 @@ import * as THREE from 'three';
     startGame();
   });
 
-  // put a tiny README style caption in message initially
-  showMessage('Ready — click Start');
+  showMessage('Ready — choose a character and click Start');
 })();

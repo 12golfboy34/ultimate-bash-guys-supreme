@@ -8,3 +8,13 @@ body,html{height:100%;margin:0;font-family:Arial,Helvetica,sans-serif;background
 #hud{position:absolute;left:12px;top:12px;pointer-events:none}
 #message{background:rgba(0,0,0,0.5);padding:8px;border-radius:6px}
 #controls{margin-top:6px;opacity:0.8}
+
+/* character select */
+#char-select{display:flex;gap:12px;justify-content:center;margin:12px 0}
+.char-card{background:rgba(255,255,255,0.04);padding:8px;border-radius:8px;width:120px;cursor:pointer;display:flex;flex-direction:column;align-items:center}
+.char-card input{display:none}
+.char-card .char-art{width:80px;height:80px;border-radius:8px;background:#333;display:flex;align-items:center;justify-content:center;font-size:36px;color:#fff;margin-bottom:8px}
+.char-card .char-name{text-transform:capitalize}
+.char-card input:checked + .char-art{outline:3px solid #6cf}
+
+#character-label{background:rgba(0,0,0,0.6);padding:6px;border-radius:6px;margin-bottom:8px}

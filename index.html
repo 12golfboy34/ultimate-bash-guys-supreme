@@ -9,13 +9,25 @@
 <body>
   <div id="ui">
     <div id="start-screen">
-      <h1>Sir Long-arms</h1>
-      <p>A tiny prototype — click Start to enter the stage.</p>
+      <h1>Character Select</h1>
+      <p>Pick a fighter (placeholder for now). Click Start to enter the stage.</p>
+
+      <div id="char-select">
+        <label class="char-card">
+          <input type="radio" name="character" value="placeholder" checked>
+          <div class="char-art">P</div>
+          <div class="char-name">placeholder</div>
+        </label>
+        <!-- you can add more character cards later -->
+      </div>
+
       <button id="start-btn">Start Game</button>
     </div>
+
     <div id="hud" class="hidden">
+      <div id="character-label">Character: <span id="selected-character-name">placeholder</span></div>
       <div id="message"></div>
-      <div id="controls">Click anywhere to punch</div>
+      <div id="controls">Click anywhere to punch (normal attack)</div>
     </div>
   </div>
 
